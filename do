@@ -12,6 +12,7 @@ from subprocess import check_call
 from subprocess import CalledProcessError
 from tempfile import mkstemp
 
+
 QUOTE_A = '  “The best way to predict the future is to invent it.” Alan Kay'
 
 
