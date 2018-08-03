@@ -135,7 +135,7 @@ def dev_prepare(args):
     run('{} exec pip3 install --upgrade pipenv'.format(pyenv))
     print('* Preparing the virtual environment via pipenv')
     run('PIPENV_VENV_IN_PROJECT=1 {} exec pipenv install --dev'.format(pyenv))
-    require('foundationdb')
+    require_ubuntu_foundationdb()  # FIXME
     print()
     print(QUOTE_A)
     print()
