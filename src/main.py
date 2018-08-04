@@ -20,12 +20,16 @@ daiquiri.setup(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 
 
+class BeyondException(Exception):
+    pass
+
+
 def generate_unique_key(dictionary):
     for _ in range(255):
         key = uuid4().hex
         if key not in dictionary:
             return key
-    raise Exception('Seems like the dictionary is full')
+    raise BeyondException('Seems like the dictionary is full')
 
 
 class Node(object):  # inspired from nevow
