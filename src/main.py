@@ -249,7 +249,7 @@ Route = namedtuple('Route', ('regex', 'init', 'render'))
 
 
 class Router:
-    """FIXME"""
+    """Why yet another router..."""
 
     def __init__(self):
         self._routes = list()
