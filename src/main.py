@@ -218,6 +218,15 @@ async def websocket(request):
                 callback = websocket.events[key]
                 # exec, prolly sending back a response via event.websocket
                 await callback(event)
+                # render page
+                html = await request.app.render(event)
+                # serialize html and extract event handlers
+                html, events = serialize(html)
+                # update event handlers
+                websocket.events = events
+                # send html update
+                msg = dict(html=html)
+                await websocket.send_str(dumps(msg))
             else:
                 msg = "msg type '%s' is not supported yet" % msg['type']
                 raise NotImplementedError(msg)
@@ -287,32 +296,54 @@ app.database = dict()
 
 app.render = router = Router()  # sic
 
+@beyond
+async def chatbox_inputed(event):
+    model = event.request.model
+    command = event.payload['target.value']
+    message = {
+        'command': command,
+        'prices': {},
+        'replies': {'echo': command},
+    }
+    model['conversation'].append(message)
+    return event
 
-def make_shell():
-    shell = h.div(id="root", Class="shell")
-    title = h.h1()["beyondjs prototype"]
-    shell.append(h.div(id="header")[title])
+
+def render_chatbot(model):
+    log.debug('render chatbot: %r', model)
+    shell = h.div(id="shell", Class="chatbot")
+
+    shell.append(h.h1()["LVA"])
+
+    for messages in model['conversation']:
+        command = messages['command']
+        prices = messages['prices']
+        replies = messages['replies']
+        shell.append(h.p()[command])
+        for chat, reply in replies.items():
+            # afficher les replies les moins cheres et proposer les autres
+            # avec un code couleur sur le prix
+            shell.append(h.p(Class='reply ' + chat)[chat + ': ' + reply])
+
+    chatbox = h.div(id="chatbox")
+    chatbox.append(h.input(type="text", on_change=chatbox_inputed))
+    # chatbox.append(h.input(type="submit"))
+
+    shell.append(chatbox)
+
     return shell
 
 
-# index page
-
 async def index_init(event):
-    event.request.input = ''
-
-@beyond
-async def callback(event):
-    event.request.input = event.payload['target.value']
+    model = {
+        'conversation': [],
+    }
+    event.request.model = model
 
 
 def index_render(event):
-    shell = make_shell()
-    menu = h.ul()
-    menu.append(h.li()[h.a(href="/counter")["Counter"]])
-    menu.append(h.li()[h.a(href="/todomvc")["todomvc"]])
-    menu.append(h.input(on_change=callback, type="text")[event.request.input])
-    shell.append(menu)
-    return shell
+    out = render_chatbot(event.request.model)
+    return out
 
 
 router.add_route(r'^/$', index_init, index_render)
@@ -320,84 +351,26 @@ router.add_route(r'^/$', index_init, index_render)
 
 # counter
 
-async def counter_init(event):
-    event.request.count = 0
+# async def counter_init(event):
+#     event.request.count = 0
 
 
-@beyond
-async def increment(event):
-    event.request.count += 1
+# @beyond
+# async def increment(event):
+#     event.request.count += 1
 
 
-def counter_render(event):
-    shell = make_shell()
-    msg = 'The count is %s' % event.request.count
-    subtitle = h.h2()[msg]
-    shell.append(subtitle)
-    button = h.button(on_click=increment)['increment the count']
-    shell.append(button)
-    return shell
+# def counter_render(event):
+#     shell = make_shell()
+#     msg = 'The count is %s' % event.request.count
+#     subtitle = h.h2()[msg]
+#     shell.append(subtitle)
+#     button = h.button(on_click=increment)['increment the count']
+#     shell.append(button)
+#     return shell
 
 
-router.add_route(r'^/counter$', counter_init, counter_render)
-
-
-# todomvc
-
-async def todomvc_init(event):
-    event.request.show = 'all'
-    event.request.todos = [
-        dict(title="Learn Python", done=True),
-        dict(title="Learn JavaScript", done=False),
-        dict(title="Learn GNU Guile", done=False),
-    ]
-
-
-@beyond
-async def todomvc_show_all(event):
-    event.request.show = 'all'
-
-
-@beyond
-async def todomvc_show_active(event):
-    event.request.show = 'done'
-
-
-@beyond
-async def todomvc_show_completed(event):
-    event.request.show = 'tbd'
-
-
-def todomvc_render(event):
-    shell = make_shell()
-    subtitle = h.h2()['todomvc']
-    shell.append(subtitle)
-    # show todos
-    todos = h.ul()
-    for todo in event.request.todos:
-        if event.request.show == 'all':
-            Class = 'done' if todo['done'] else 'tbd'
-            item = h.li(Class=Class)[todo['title']]
-            todos.append(item)
-        elif event.request.show == 'done' and not todo['done']:
-            item = h.li(Class='tbd')[todo['title']]
-            todos.append(item)
-        elif event.request.show == 'tbd' and todo['done']:
-            item = h.li(Class='done')[todo['title']]
-            todos.append(item)
-        else:
-            pass
-    shell.append(todos)
-    # menu
-    menu = h.div()
-    menu.append(h.button(on_click=todomvc_show_all)['show all'])
-    menu.append(h.button(on_click=todomvc_show_active)['show active'])
-    menu.append(h.button(on_click=todomvc_show_completed)['show completed'])
-    shell.append(menu)
-    return shell
-
-
-router.add_route(r'^/todomvc$', todomvc_init, todomvc_render)
+# router.add_route(r'^/counter$', counter_init, counter_render)
 
 
 # start the app at localhost:8080

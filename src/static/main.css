@@ -132,97 +132,19 @@ input[type="submit"]:hover {
     box-shadow: 2px 2px 2px black;
 }
 
-/* BODY.INDEX */
 
-body.index #shell form {
+/* CHATBOT */
+
+#shell.chatbot .reply {
+    border-left: solid 5px white;
+    padding-left: 15px;
+}
+
+
+#shell.chatbot #chatbox {
     display: flex;
-    flex-direction: column;
 }
 
-/* BODY.WIKI */
-
-body.wiki #wiki-header {
-    display: flex;
-}
-
-body.wiki #wiki-header h1 {
-    flex-grow: 2;
-}
-
-body.wiki #wiki-tools {
-    margin: 0px;
-    padding: 0px;
-}
-
-body.wiki #wiki-tools li {
-    margin: 0px;
-    padding: 0px;
-    display: inline-block;
-    margin-left: 15px;
-}
-
-body.wiki #wiki-tools li a {
-    text-decoration: none;
-}
-
-body.wiki #wiki-tools li a:hover {
-    border-bottom: 1px solid white;
-}
-
-body.wiki-edit #wiki-content textarea,
-body.wiki-revision #wiki-content textarea {
-    height: 500px;
-}
-
-/* BODY.DISCUSS */
-
-body.discuss textarea {
-    height: 100px;
-}
-
-body.discuss form {
-    border-bottom: 1px solid hsla(0, 0%, 100%, 0.3);
-    margin-bottom: 15px;
-}
-
-body.discuss div.discuss-message {
-    border-bottom: 1px solid hsla(0, 0%, 100%, 0.3);
-    margin-bottom: 15px;
-}
-
-body.discuss div.discuss-message p.discuss-message-body {
-    padding: 0px;
-    margin: 0px;
-    text-align: justify;
-    line-height: 1.5em;
-}
-
-body.discuss div.discuss-message p.discuss-message-date {
-    text-align: right;
-    font-family: mono;
-    font-size: 0.8em;
-}
-
-/* BODY.QA */
-
-body.qa qa-question textarea {
-    height: 500px;
-}
-
-body.qa .qa-question {
-    text-align: justify;
-    border-bottom: 1px solid white;
-}
-
-body.qa .qa-comment textarea {
-    font-size: 0.8em;
-    padding: 10px;
-    margin: 15px;
-    border-color: hsla(0, 0%, 100%, 0.3);
-}
-
-body.qa .qa-comment input[type="submit"] {
-    font-size: 0.8em;
-    padding: 10px;
-    margin-left: 15px;
+#shell.chatbot #chatbox input[type="text"] {
+    flex: 2;
 }
