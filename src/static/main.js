@@ -1,3 +1,5 @@
+console.log('boot')
+
 var container = document.getElementById('container');
 
 var patch = snabbdom.init([
@@ -10,13 +12,6 @@ var patch = snabbdom.init([
 
 var ws = new WebSocket("ws://127.0.0.1:8080/websocket");  // TODO: support https/wss
 
-ws.onopen = function (_) {
-    var msg = {
-        path: location.pathname,
-        type: 'init',
-    };
-    ws.send(JSON.stringify(msg));
-};
 
 /* Translate json to `vnode` using `h` snabbdom helper */
 var translate = function(json) {
@@ -32,8 +27,8 @@ var translate = function(json) {
                     path: location.pathname,
                     type: 'dom-event',
                     key: json.on[event_name],
-                    event: JSON.stringify(event),
-                }
+                    event: {'target.value': event.target.value},
+                };
                 console.log('send', msg);
                 ws.send(JSON.stringify(msg));
             }
@@ -57,3 +52,11 @@ ws.onmessage = function(msg) {
     var msg = JSON.parse(msg.data);
     container = patch(container, translate(msg.html))
 }
+
+ws.onopen = function (_) {
+    var msg = {
+        path: location.pathname,
+        type: 'init',
+    };
+    ws.send(JSON.stringify(msg));
+};

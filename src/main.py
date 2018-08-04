@@ -2,6 +2,7 @@
 application without writing javascript
 
 """
+import logging
 import re
 from collections import namedtuple
 from functools import wraps
@@ -9,8 +10,14 @@ from json import dumps
 from json import loads
 from uuid import uuid4
 
+import daiquiri
 import aiohttp
 from aiohttp import web
+
+
+daiquiri.setup(level=logging.DEBUG)
+
+log = logging.getLogger(__name__)
 
 
 def generate_unique_key(dictionary):
@@ -154,7 +161,7 @@ def beyond(callable):
         msg = dict(
             html=html,
         )
-        event.websocket.send_str(dumps(msg))
+        await event.websocket.send_str(dumps(msg))
 
     return wrapper
 
@@ -176,19 +183,21 @@ async def websocket(request):
     websocket = web.WebSocketResponse()
     await websocket.prepare(request)
 
-    while not websocket.closed:
-        msg = await websocket.receive()
-        if msg.tp == aiohttp.WSMsgType.error:
+    async for msg in websocket:
+
+        if msg.type == aiohttp.WSMsgType.ERROR:
             msg = 'websocket connection closed with exception %s'
             msg = msg % websocket.exception()
             print(msg)
-        elif msg.tp == aiohttp.WSMsgType.close:
+        elif msg.type == aiohttp.WSMsgType.CLOSE:
             break
-        elif msg.tp == aiohttp.WSMsgType.text:
-            msg = loads(msg.data)
-            if msg['type'] == 'init':
+        elif msg.type == aiohttp.WSMsgType.TEXT:
+            event = loads(msg.data)
+            log.debug('websocket got message type: %s', event["type"])
+            if event['type'] == 'init':
+
                 # Render the page
-                event = Event('init', request, websocket, msg['path'], None)
+                event = Event('init', request, websocket, event['path'], None)
                 html = await request.app.render(event)
                 # serialize html and extract event handlers
                 html, events = serialize(html)
@@ -196,12 +205,13 @@ async def websocket(request):
                 websocket.events = events
                 # send html update
                 msg = dict(html=html)
-                websocket.send_str(dumps(msg))
-            elif msg['type'] == 'dom-event':
+                await websocket.send_str(dumps(msg))
+            elif event['type'] == 'dom-event':
                 # Build backend event
-                event = Event('dom-event', request, websocket, msg['path'], msg['event'])
+                key = event['key']
+                event = Event('dom-event', request, websocket, event['path'], event['event'])  # noqa
                 # retrieve callback for event
-                callback = websocket.events[msg['key']]
+                callback = websocket.events[key]
                 # exec, prolly sending back a response via event.websocket
                 await callback(event)
             else:
@@ -284,7 +294,11 @@ def make_shell():
 # index page
 
 async def index_init(event):
-    pass
+    event.request.input = ''
+
+@beyond
+async def callback(event):
+    event.request.input = event.payload['target.value']
 
 
 def index_render(event):
@@ -292,6 +306,7 @@ def index_render(event):
     menu = h.ul()
     menu.append(h.li()[h.a(href="/counter")["Counter"]])
     menu.append(h.li()[h.a(href="/todomvc")["todomvc"]])
+    menu.append(h.input(on_change=callback, type="text")[event.request.input])
     shell.append(menu)
     return shell
 
