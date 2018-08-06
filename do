@@ -92,7 +92,7 @@ def require_ubuntu_foundationdb():
     sudo('dpkg -i {}'.format(filepath))
 
 
-manager['Linux']['Ubuntu']['18.04']['foundationdb'] = require_ubuntu_foundationdb
+manager['Linux']['Ubuntu']['18.04']['fdbcli'] = require_ubuntu_foundationdb
 
 
 commands = RecursiveDict()
@@ -135,7 +135,7 @@ def dev_prepare(args):
     run('{} exec pip3 install --upgrade pipenv'.format(pyenv))
     print('* Preparing the virtual environment via pipenv')
     run('PIPENV_VENV_IN_PROJECT=1 {} exec pipenv install --dev'.format(pyenv))
-    require_ubuntu_foundationdb()  # FIXME
+    require('fdbcli')  # FIXME
     print()
     print(QUOTE_A)
     print()
