@@ -25,10 +25,9 @@ class BeyondException(Exception):
 
 
 def generate_unique_key(dictionary):
-    for _ in range(255):
-        key = uuid4().hex
-        if key not in dictionary:
-            return key
+    key = uuid4().hex
+    if key not in dictionary:
+        return key
     raise BeyondException('Seems like the dictionary is full')
 
 
@@ -133,12 +132,34 @@ class PythonHTML(object):
 
     E.g.
 
-    h.div(id="container", Class="minimal thing", For="something")["Héllo ", "World!"]
+    h.div(id="container", Class="minimal thing", For="something")["Héllo World!"]
 
     container = h.div(id="container", Class="minimal thing")
     container.append("Héllo World!")
 
     """
+
+    def form(self, **kwargs):
+        """form element that prevents default 'submit' behavior"""
+        node = Node('form')
+        node._attributes['onsubmit'] = 'return false;'
+        node._attributes.update(**kwargs)
+        return node
+
+    def input(self, **kwargs):
+        type = kwargs.get('type')
+        if type == 'text':
+            try:
+                kwargs['id']
+            except KeyError:
+                pass
+            else:
+                log.warning("id attribute on text input node ignored")
+            node = Node('input#' + uuid4().hex)
+        else:
+            node = Node('input')
+        node._attributes.update(**kwargs)
+        return node
 
     def __getattr__(self, attribute_name):
         return Node(attribute_name)
@@ -238,12 +259,10 @@ async def websocket(request):
     return websocket
 
 
-with open('index.html', 'rb') as f:
-    INDEX = f.read()
-
-
 async def index(request):
     """Return the index page"""
+    with open('index.html', 'rb') as f:
+        INDEX = f.read()
     return web.Response(body=INDEX, content_type='text/html')
 
 
@@ -296,28 +315,31 @@ app.database = dict()
 
 app.render = router = Router()  # sic
 
+
 @beyond
 async def chatbox_inputed(event):
     model = event.request.model
     command = event.payload['target.value']
-    message = {
-        'command': command,
-        'prices': {},
-        'replies': {'echo': command},
-    }
-    model['conversation'].append(message)
-    return event
+    model = event.request.model['command'] = command
+
+
+@beyond
+async def on_submit(event):
+    command = event.request.model.get('command')
+    if command:
+        del event.request.model['command']
+        message = {'command': command, 'replies': {'echo': command}}
+        event.request.model['conversation'].append(message)
 
 
 def render_chatbot(model):
     log.debug('render chatbot: %r', model)
     shell = h.div(id="shell", Class="chatbot")
 
-    shell.append(h.h1()["LVA"])
+    shell.append(h.h1()["beyondjs"])
 
     for messages in model['conversation']:
         command = messages['command']
-        prices = messages['prices']
         replies = messages['replies']
         shell.append(h.p()[command])
         for chat, reply in replies.items():
@@ -326,8 +348,10 @@ def render_chatbot(model):
             shell.append(h.p(Class='reply ' + chat)[chat + ': ' + reply])
 
     chatbox = h.div(id="chatbox")
-    chatbox.append(h.input(type="text", on_change=chatbox_inputed))
-    # chatbox.append(h.input(type="submit"))
+    form = h.form(on_submit=on_submit)
+    form.append(h.input(type="text", on_change=chatbox_inputed))
+    form.append(h.input(type="submit"))
+    chatbox.append(form)
 
     shell.append(chatbox)
 

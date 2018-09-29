@@ -1,14 +1,17 @@
+import './snabbdom.js';
+import './snabbdom-attributes.js';
+import './snabbdom-eventlisteners.js';
+
 console.log('boot')
 
 var container = document.getElementById('container');
 
 var patch = snabbdom.init([
-    snabbdom_style,
-    snabbdom_class,
-    snabbdom_props,
-    snabbdom_attributes,
-    snabbdom_eventlisteners
+    snabbdom_attributes.default,
+    snabbdom_eventlisteners.default,
 ]);
+
+var h = snabbdom.h;
 
 var ws = new WebSocket("ws://127.0.0.1:8080/websocket");  // TODO: support https/wss
 
