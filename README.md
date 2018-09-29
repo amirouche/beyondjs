@@ -17,7 +17,8 @@ Right now, there is a small "counter" application and a todomvc.
 ```shell
 git clone https://github.com/amirouche/beyondjs
 cd beyondjs
-pip3 install --user -r requirements
+pipenv install --dev
+pipenv shell
 cd src
 python3 main.py
 ```
